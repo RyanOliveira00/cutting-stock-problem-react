@@ -73,86 +73,52 @@ export function TelasCalculator() {
   };
 
   const calcularResultados = () => {
-    // Primeira etapa: agrupar peças que podem ser combinadas
-    const pecasAgrupadas = [];
+    const telasDistribuidas = [];
+    const pecasParaDistribuir = [...pecas];
     
-    // Copia as peças para não modificar o original
-    const pecasRestantes = [...pecas];
-    
-    while (pecasRestantes.length > 0) {
-        const telaPecas = [];
-        let espacoLargura = 2.45; // largura total da tela
-        let espacoComprimento = 6.0; // comprimento total da tela
-        const posicaoAtual = { x: 0, y: 0 }; // para controlar a posição de cada peça
+    while (pecasParaDistribuir.length > 0) {
+        const telaAtual = [];
+        let larguraDisponivel = 2.45;
         
-        // Tenta preencher uma tela
-        let mudou = true;
-        while (mudou) {
-            mudou = false;
+        // Tenta encaixar peças lado a lado na tela atual
+        for (let i = pecasParaDistribuir.length - 1; i >= 0; i--) {
+            const peca = pecasParaDistribuir[i];
             
-            // Procura por peças que cabem no espaço atual
-            for (let i = 0; i < pecasRestantes.length; i++) {
-                const peca = pecasRestantes[i];
+            if (peca.largura <= larguraDisponivel && peca.quantidade > 0) {
+                // Adiciona a peça à tela atual
+                telaAtual.push({
+                    ...peca,
+                    quantidade: 1,
+                    posicaoX: 2.45 - larguraDisponivel
+                });
                 
-                // Verifica se a peça cabe na linha atual
-                if (peca.largura <= espacoLargura && peca.comprimento <= espacoComprimento) {
-                    // Adiciona a peça com sua posição
-                    telaPecas.push({
-                        ...peca,
-                        quantidade: 1,
-                        posicao: { x: posicaoAtual.x, y: posicaoAtual.y }
-                    });
-                    
-                    // Atualiza espaço disponível
-                    espacoLargura -= peca.largura;
-                    
-                    // Atualiza posição para próxima peça
-                    posicaoAtual.x += peca.largura;
-                    
-                    // Reduz a quantidade da peça original
-                    pecasRestantes[i] = {
-                        ...peca,
-                        quantidade: peca.quantidade - 1
-                    };
-                    
-                    // Remove a peça se foi totalmente usada
-                    if (pecasRestantes[i].quantidade === 0) {
-                        pecasRestantes.splice(i, 1);
-                    }
-                    
-                    mudou = true;
-                    break;
-                }
-            }
-            
-            // Se não coube mais nada na linha atual, tenta uma nova linha
-            if (!mudou && espacoComprimento > 0) {
-                const alturaMaximaLinha = Math.max(...telaPecas
-                    .filter(p => p.posicao.y === posicaoAtual.y)
-                    .map(p => p.comprimento));
+                // Atualiza a largura disponível
+                larguraDisponivel -= peca.largura;
                 
-                if (espacoComprimento >= alturaMaximaLinha) {
-                    posicaoAtual.y += alturaMaximaLinha;
-                    espacoComprimento -= alturaMaximaLinha;
-                    espacoLargura = 2.45;
-                    posicaoAtual.x = 0;
-                    mudou = true;
+                // Atualiza a quantidade restante da peça
+                peca.quantidade--;
+                
+                // Remove a peça se não houver mais unidades
+                if (peca.quantidade === 0) {
+                    pecasParaDistribuir.splice(i, 1);
                 }
             }
         }
         
-        // Se conseguiu colocar alguma peça na tela, adiciona à lista
-        if (telaPecas.length > 0) {
-            pecasAgrupadas.push(telaPecas);
+        // Se conseguiu adicionar alguma peça na tela
+        if (telaAtual.length > 0) {
+            telasDistribuidas.push(telaAtual);
+        } else {
+            // Se não conseguiu adicionar nenhuma peça, provavelmente há um problema
+            break;
         }
     }
     
-    // Calcula os resultados finais
-    const telasNecessarias = pecasAgrupadas.length;
     const areaTotal = pecas.reduce((acc, peca) => 
         acc + (peca.largura * peca.comprimento * peca.quantidade), 0
     );
     const areaTela = 2.45 * 6;
+    const telasNecessarias = telasDistribuidas.length;
     const aproveitamento = (areaTotal / (telasNecessarias * areaTela)) * 100;
 
     setResultados({
@@ -161,8 +127,7 @@ export function TelasCalculator() {
         aproveitamento
     });
     
-    // Atualiza a visualização com as combinações
-    setDistribuicaoPecas(pecasAgrupadas);
+    setDistribuicaoPecas(telasDistribuidas);
 };
 
   useEffect(() => {
