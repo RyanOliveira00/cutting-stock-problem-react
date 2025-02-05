@@ -68,21 +68,9 @@ export function TelasCalculator() {
     let telasNecessarias = 0;
     let areaTotal = 0;
 
-    // Para cada peça
     pecas.forEach(peca => {
-      // Calcula quantas peças cabem em uma tela (comprimento)
-      const pecasPorTela = Math.floor(6.0 / peca.comprimento);
-      
-      // Se a peça é maior que 6m, não cabe em uma tela
-      if (pecasPorTela === 0) {
-        alert(`Erro: Uma peça de ${peca.comprimento}m não cabe em uma tela de 6m!`);
-        return;
-      }
-
-      // Calcula quantas telas são necessárias para esta peça
-      const telasParaEstaPeca = Math.ceil(peca.quantidade / pecasPorTela);
-      
-      telasNecessarias += telasParaEstaPeca;
+  
+      telasNecessarias += peca.quantidade;
       areaTotal += peca.largura * peca.comprimento * peca.quantidade;
     });
 
