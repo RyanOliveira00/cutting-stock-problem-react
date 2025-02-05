@@ -361,8 +361,8 @@ function TelasVisualization({ pecas, distribuicao }: TelasVisualizationProps) {
                 height: `${(peca.comprimento / 6) * 100}%`,
                 backgroundColor: cor,
                 opacity: 0.7,
-                left: `${(peca.posicao!.x / 2.45) * 100}%`,
-                top: `${(peca.posicao!.y / 6) * 100}%`
+                // left: `${(peca.posicao!.x / 2.45) * 100}%`,
+                // top: `${(peca.posicao!.y / 6) * 100}%`
             }}
         >
             <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-sm">
