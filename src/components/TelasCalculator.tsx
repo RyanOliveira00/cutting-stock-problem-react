@@ -6,6 +6,7 @@ interface Peca {
   largura: number;
   comprimento: number;
   quantidade: number;
+  posicao?: { x: number; y: number };
 }
 
 interface FormData {
@@ -384,6 +385,28 @@ function TelasVisualization({ pecas, distribuicao }: TelasVisualizationProps) {
 
                 {/* Peças na tela */}
                 {tela.map((peca, pecaIndex) => {
+    const cor = `hsl(${peca.id * 137.5 % 360}, 50%, 50%)`;
+    
+    return (
+        <div
+            key={`${peca.id}-${pecaIndex}`}
+            className="absolute border border-white transition-opacity hover:opacity-80"
+            style={{
+                width: `${(peca.largura / 2.45) * 100}%`,
+                height: `${(peca.comprimento / 6) * 100}%`,
+                backgroundColor: cor,
+                opacity: 0.7,
+                left: `${(peca.posicao!.x / 2.45) * 100}%`,
+                top: `${(peca.posicao!.y / 6) * 100}%`
+            }}
+        >
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-sm">
+                <span>{peca.largura}m x {peca.comprimento}m</span>
+            </div>
+        </div>
+    );
+})}
+                {/* {tela.map((peca, pecaIndex) => {
                   const cor = `hsl(${(peca.id * 137.5) % 360}, 50%, 50%)`;
                   // Calcula a posição Y baseada nas peças anteriores
                   const offsetY = tela
@@ -410,7 +433,7 @@ function TelasVisualization({ pecas, distribuicao }: TelasVisualizationProps) {
                       </div>
                     </div>
                   );
-                })}
+                })} */}
               </div>
 
               {/* Informações da tela */}
