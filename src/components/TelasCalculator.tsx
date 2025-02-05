@@ -83,7 +83,7 @@ export function TelasCalculator() {
     while (pecasRestantes.length > 0) {
       const telasNecessarias = [];
       let espacoRestante = 6.0; // comprimento total da tela
-      let pecasNaTela = [];
+      const pecasNaTela = [];
 
       // Tenta combinar peças em uma tela
       for (let i = 0; i < pecasRestantes.length; i++) {
