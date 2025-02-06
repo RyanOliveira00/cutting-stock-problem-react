@@ -84,75 +84,70 @@ export function TelasCalculator() {
     const telasDistribuidas: PecaPosicionada[][] = [];
     const pecasParaDistribuir: Peca[] = pecas.map(peca => ({...peca}));
 
-    while (pecasParaDistribuir.some(p => p.quantidade > 0)) {
+    const totalPecas = pecasParaDistribuir.reduce((acc, peca) => acc + peca.quantidade, 0);
+    const maxIteracoes = totalPecas * 2; // Segurança contra loops infinitos
+    let iteracoes = 0;
+
+    while (pecasParaDistribuir.some(p => p.quantidade > 0) && iteracoes < maxIteracoes) {
+        iteracoes++;
         const telaAtual: PecaPosicionada[] = [];
-        const espacoDisponivel = {
-            altura: 6.0,    // Altura total disponível na tela
-            largura: 2.45,  // Largura total disponível na tela
-            posicaoY: 0     // Posição Y atual
-        };
+        let alturaDisponivel = 6.0;
+        let larguraDisponivel = 2.45;
+        let posicaoYAtual = 0;
 
-        // Tenta adicionar peças à tela atual
-        let adicionouPeca = true;
-        while (adicionouPeca && espacoDisponivel.altura > 0) {
-            adicionouPeca = false;
+        // Ordena peças por área (maior primeiro)
+        const pecasOrdenadas = [...pecasParaDistribuir]
+            .filter(p => p.quantidade > 0)
+            .sort((a, b) => (b.largura * b.comprimento) - (a.largura * a.comprimento));
 
-            // Ordena peças por altura (maior primeiro) para melhor aproveitamento
-            const pecasOrdenadas = [...pecasParaDistribuir]
-                .filter(p => p.quantidade > 0)
-                .sort((a, b) => b.comprimento - a.comprimento);
+        // Para cada peça ordenada
+        for (const peca of pecasOrdenadas) {
+            while (peca.quantidade > 0 && alturaDisponivel >= peca.comprimento) {
+                // Se a peça cabe na largura atual
+                if (peca.largura <= larguraDisponivel) {
+                    telaAtual.push({
+                        ...peca,
+                        quantidade: 1,
+                        posicaoX: 2.45 - larguraDisponivel,
+                        posicaoY: posicaoYAtual
+                    });
 
-            // Tenta adicionar cada peça
-            for (const peca of pecasOrdenadas) {
-                while (peca.quantidade > 0 && espacoDisponivel.altura > 0) {
-                    // Verifica se a peça cabe na altura restante
-                    if (peca.comprimento <= espacoDisponivel.altura) {
-                        // Se for peça que ocupa toda largura
-                        if (peca.largura === 2.45) {
-                            telaAtual.push({
-                                ...peca,
-                                quantidade: 1,
-                                posicaoX: 0,
-                                posicaoY: espacoDisponivel.posicaoY
-                            });
+                    peca.quantidade--;
+                    larguraDisponivel -= peca.largura;
 
-                            espacoDisponivel.altura -= peca.comprimento;
-                            espacoDisponivel.posicaoY += peca.comprimento;
-                            peca.quantidade--;
-                            adicionouPeca = true;
-                        }
-                        // Se for peça menor, tenta encaixar lado a lado
-                        else if (peca.largura <= espacoDisponivel.largura) {
-                            telaAtual.push({
-                                ...peca,
-                                quantidade: 1,
-                                posicaoX: 2.45 - espacoDisponivel.largura,
-                                posicaoY: espacoDisponivel.posicaoY
-                            });
-
-                            espacoDisponivel.largura -= peca.largura;
-                            peca.quantidade--;
-                            adicionouPeca = true;
-
-                            // Se preencheu a largura, avança para próxima linha
-                            if (espacoDisponivel.largura < 0.5) { // Assume mínimo de 0.5m para nova peça
-                                espacoDisponivel.altura -= peca.comprimento;
-                                espacoDisponivel.posicaoY += peca.comprimento;
-                                espacoDisponivel.largura = 2.45;
-                            }
-                        }
-                    } else {
-                        break; // Se não cabe mais, sai do loop
+                    // Se não tem mais largura suficiente, avança para próxima linha
+                    if (larguraDisponivel < 0.5) {
+                        posicaoYAtual += peca.comprimento;
+                        alturaDisponivel -= peca.comprimento;
+                        larguraDisponivel = 2.45;
                     }
+                } else {
+                    // Se não cabe na largura, avança para próxima linha
+                    posicaoYAtual += peca.comprimento;
+                    alturaDisponivel -= peca.comprimento;
+                    larguraDisponivel = 2.45;
+                }
+
+                // Se não tem mais altura suficiente, para de processar esta peça
+                if (alturaDisponivel < peca.comprimento) {
+                    break;
                 }
             }
         }
 
+        // Se conseguiu adicionar peças nesta tela
         if (telaAtual.length > 0) {
             telasDistribuidas.push(telaAtual);
         } else {
+            // Se não conseguiu adicionar nenhuma peça, algo está errado
+            console.error("Não foi possível adicionar mais peças");
             break;
         }
+    }
+
+    // Se saiu por número máximo de iterações, avisa
+    if (iteracoes >= maxIteracoes) {
+        console.error("Atingiu número máximo de iterações");
     }
 
     const areaTotal = pecas.reduce((acc, peca) => 
