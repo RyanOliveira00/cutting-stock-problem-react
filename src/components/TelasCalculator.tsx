@@ -6,8 +6,8 @@ interface Peca {
   largura: number;
   comprimento: number;
   quantidade: number;
-  posicaoX?: number;
-  posicaoY?: number;
+  posicaoX: number;
+  posicaoY: number;
 }
 
 interface FormData {
@@ -64,6 +64,8 @@ export function TelasCalculator() {
         largura: Number(formData.largura),
         comprimento: Number(formData.comprimento),
         quantidade: Number(formData.quantidade),
+        posicaoX: 0,
+        posicaoY: 0,
       },
     ]);
 
@@ -345,146 +347,97 @@ export function TelasCalculator() {
 // }
 
 
-// function TelasVisualization({ pecas, distribuicao }: {
-//   pecas: Peca[];
-//   distribuicao: PecaPosicionada[][];
-// }) {
-//   return (
-//     <Card className="mt-6">
-//       <CardContent className="p-6">
-//         <div className="space-y-16 mt-7">
-//           {distribuicao.map((tela, telaIndex) => (
-//             <div key={telaIndex} className="relative">
-//               <div className="relative bg-gray-100 rounded-lg border-2 border-gray-300" 
-//                    style={{ width: '100%', height: '240px' }}>
-//                 {/* Título da tela */}
-//                 <div className="absolute -top-8 left-0 font-medium">
-//                   Tela {telaIndex + 1}
-//                 </div>
-
-//                 {/* Medidas verticais */}
-//                 <div className="absolute -left-16 h-full flex flex-col justify-between text-sm text-gray-500">
-//                   <span>6m</span>
-//                   <span>3m</span>
-//                   <span>0m</span>
-//                 </div>
-
-//                 {/* Medidas horizontais */}
-//                 <div className="absolute -bottom-8 w-full flex justify-between text-sm text-gray-500">
-//                   <span>0m</span>
-//                   <span>1.225m</span>
-//                   <span>2.45m</span>
-//                 </div>
-
-//                 {/* Grid de referência */}
-//                 <div className="absolute inset-0 grid grid-cols-2">
-//                   <div className="border-r border-gray-300"></div>
-//                 </div>
-//                 <div className="absolute inset-0 grid grid-rows-2">
-//                   <div className="border-b border-gray-300"></div>
-//                 </div>
-
-//                 {/* Peças */}
-//                 {tela.map((peca, pecaIndex) => (
-//                   <div
-//                     key={`${peca.id}-${pecaIndex}`}
-//                     className="absolute border border-white transition-opacity hover:opacity-80"
-//                     style={{
-//                       width: `${(peca.largura / 2.45) * 100}%`,
-//                       height: `${(peca.comprimento / 6) * 100}%`,
-//                       backgroundColor: `hsl(${pecaIndex * 137.5 % 360}, 50%, 50%)`,
-//                       opacity: 0.7,
-//                       left: `${(peca.posicaoX) * (100 / 2.45)}%`,
-//                       top: `${(peca.posicaoY) * (100 / 6)}%`,
-//                       transform: 'translate(0, 0)', // Remove qualquer transformação que possa causar sobreposição
-//                       zIndex: pecaIndex // Garante que peças posteriores fiquem por cima se necessário
-//                     }}
-//                   >
-//                     <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-sm">
-//                       <span>{peca.largura}m x {peca.comprimento}m</span>
-//                     </div>
-//                   </div>
-//                 ))}
-//               </div>
-
-//               {/* Informações da tela */}
-//               <div className="mt-8 text-sm text-gray-600">
-//                 Peças nesta tela: {tela.map(p => `${p.largura}x${p.comprimento}m`).join(' + ')}
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-
-//         {/* Legenda */}
-//         <div className="mt-8">
-//           <h3 className="font-medium mb-2">Peças Cadastradas:</h3>
-//           <div className="flex flex-wrap gap-4">
-//             {pecas.map((peca, index) => (
-//               <div key={peca.id} className="flex items-center">
-//                 <div 
-//                   className="w-4 h-4 rounded mr-2"
-//                   style={{
-//                     backgroundColor: `hsl(${index * 137.5 % 360}, 50%, 50%)`
-//                   }}
-//                 ></div>
-//                 <span>
-//                   {peca.largura}m x {peca.comprimento}m 
-//                   ({peca.quantidade} {peca.quantidade === 1 ? 'peça' : 'peças'})
-//                 </span>
-//               </div>
-//             ))}
-//           </div>
-//         </div>
-//       </CardContent>
-//     </Card>
-//   );
-// }
-
-import React from 'react';
-import { Stage, Layer, Rect, Text } from 'react-konva';
-
-interface PecaPosicionada {
-  largura: number;
-  comprimento: number;
-  posicaoX: number;
-  posicaoY: number;
-}
-
-interface TelasVisualizationProps {
+function TelasVisualization({ pecas, distribuicao }: {
+  pecas: Peca[];
   distribuicao: PecaPosicionada[][];
-}
-
-const TelasVisualization: React.FC<TelasVisualizationProps> = ({ distribuicao }) => {
+}) {
   return (
-    <Stage width={600} height={400}>
-      <Layer>
-        {distribuicao.map((tela, telaIndex) => (
-          <React.Fragment key={telaIndex}>
-            {tela.map((peca, pecaIndex) => (
-              <React.Fragment key={`${pecaIndex}-${telaIndex}`}>
-                <Rect
-                  x={peca.posicaoX * (600 / 2.45)} // Ajuste a escala conforme necessário
-                  y={peca.posicaoY * (400 / 6)} // Ajuste a escala conforme necessário
-                  width={peca.largura * (600 / 2.45)} // Ajuste a escala conforme necessário
-                  height={peca.comprimento * (400 / 6)} // Ajuste a escala conforme necessário
-                  fill={`hsl(${pecaIndex * 137.5 % 360}, 50%, 50%)`}
-                  opacity={0.7}
-                  stroke="white"
-                  strokeWidth={1}
-                />
-                <Text
-                  text={`${peca.largura}m x ${peca.comprimento}m`}
-                  x={peca.posicaoX * (600 / 2.45) + 5} // Ajuste a posição do texto
-                  y={peca.posicaoY * (400 / 6) + 5} // Ajuste a posição do texto
-                  fontSize={12}
-                  fill="white"
-                />
-              </React.Fragment>
-            ))}
-          </React.Fragment>
-        ))}
-      </Layer>
-    </Stage>
-  );
-};
+    <Card className="mt-6">
+      <CardContent className="p-6">
+        <div className="space-y-16 mt-7">
+          {distribuicao.map((tela, telaIndex) => (
+            <div key={telaIndex} className="relative">
+              <div className="relative bg-gray-100 rounded-lg border-2 border-gray-300" 
+                   style={{ width: '100%', height: '240px' }}>
+                {/* Título da tela */}
+                <div className="absolute -top-8 left-0 font-medium">
+                  Tela {telaIndex + 1}
+                </div>
 
+                {/* Medidas verticais */}
+                <div className="absolute -left-16 h-full flex flex-col justify-between text-sm text-gray-500">
+                  <span>6m</span>
+                  <span>3m</span>
+                  <span>0m</span>
+                </div>
+
+                {/* Medidas horizontais */}
+                <div className="absolute -bottom-8 w-full flex justify-between text-sm text-gray-500">
+                  <span>0m</span>
+                  <span>1.225m</span>
+                  <span>2.45m</span>
+                </div>
+
+                {/* Grid de referência */}
+                <div className="absolute inset-0 grid grid-cols-2">
+                  <div className="border-r border-gray-300"></div>
+                </div>
+                <div className="absolute inset-0 grid grid-rows-2">
+                  <div className="border-b border-gray-300"></div>
+                </div>
+
+                {/* Peças */}
+                {tela.map((peca, pecaIndex) => (
+                  <div
+                    key={`${peca.id}-${pecaIndex}`}
+                    className="absolute border border-white transition-opacity hover:opacity-80"
+                    style={{
+                      width: `${(peca.largura / 2.45) * 100}%`,
+                      height: `${(peca.comprimento / 6) * 100}%`,
+                      backgroundColor: `hsl(${pecaIndex * 137.5 % 360}, 50%, 50%)`,
+                      opacity: 0.7,
+                      left: `${(peca.posicaoX) * (100 / 2.45)}%`,
+                      top: `${(peca.posicaoY) * (100 / 6)}%`,
+                      transform: 'translate(0, 0)', // Remove qualquer transformação que possa causar sobreposição
+                      zIndex: pecaIndex // Garante que peças posteriores fiquem por cima se necessário
+                    }}
+                  >
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-sm">
+                      <span>{peca.largura}m x {peca.comprimento}m</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Informações da tela */}
+              <div className="mt-8 text-sm text-gray-600">
+                Peças nesta tela: {tela.map(p => `${p.largura}x${p.comprimento}m`).join(' + ')}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Legenda */}
+        <div className="mt-8">
+          <h3 className="font-medium mb-2">Peças Cadastradas:</h3>
+          <div className="flex flex-wrap gap-4">
+            {pecas.map((peca, index) => (
+              <div key={peca.id} className="flex items-center">
+                <div 
+                  className="w-4 h-4 rounded mr-2"
+                  style={{
+                    backgroundColor: `hsl(${index * 137.5 % 360}, 50%, 50%)`
+                  }}
+                ></div>
+                <span>
+                  {peca.largura}m x {peca.comprimento}m 
+                  ({peca.quantidade} {peca.quantidade === 1 ? 'peça' : 'peças'})
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
