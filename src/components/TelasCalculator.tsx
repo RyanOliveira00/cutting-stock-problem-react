@@ -7,6 +7,7 @@ interface Peca {
   comprimento: number;
   quantidade: number;
   posicaoX?: number;
+  posicaoY?: number;
 }
 
 interface FormData {
@@ -74,53 +75,87 @@ export function TelasCalculator() {
 
   const calcularResultados = () => {
     const telasDistribuidas = [];
-    const pecasParaDistribuir = pecas.map((peca) => ({ ...peca }));
-
-    while (pecasParaDistribuir.some((p) => p.quantidade > 0)) {
-      const telaAtual = [];
-      let larguraDisponivel = 2.45;
-
-      for (let i = 0; i < pecasParaDistribuir.length; i++) {
-        const peca = pecasParaDistribuir[i];
-
-        if (peca.quantidade > 0 && peca.largura <= larguraDisponivel) {
-          telaAtual.push({
-            ...peca,
-            posicaoX: 2.45 - larguraDisponivel,
-          });
-
-          larguraDisponivel -= peca.largura;
-
-          pecasParaDistribuir[i] = {
-            ...peca,
-            quantidade: peca.quantidade - 1,
-          };
+    // Faz uma cópia profunda das peças
+    let pecasParaDistribuir = pecas.map(peca => ({...peca}));
+    
+    while (pecasParaDistribuir.some(p => p.quantidade > 0)) {
+        const telaAtual = [];
+        let larguraDisponivel = 2.45;
+        let alturaDisponivel = 6.0;
+        
+        // Primeiro tenta encontrar peças que podem ser empilhadas (mesma largura)
+        for (let i = 0; i < pecasParaDistribuir.length; i++) {
+            if (pecasParaDistribuir[i].quantidade > 0) {
+                const peca = pecasParaDistribuir[i];
+                
+                // Se a peça cabe na altura disponível
+                if (peca.comprimento <= alturaDisponivel) {
+                    // Adiciona a peça à tela atual
+                    telaAtual.push({
+                        ...peca,
+                        posicaoX: 0,
+                        posicaoY: 6 - alturaDisponivel // Posição vertical
+                    });
+                    
+                    // Atualiza a altura disponível
+                    alturaDisponivel -= peca.comprimento;
+                    
+                    // Decrementa a quantidade restante
+                    pecasParaDistribuir[i] = {
+                        ...peca,
+                        quantidade: peca.quantidade - 1
+                    };
+                }
+            }
         }
-      }
-
-      if (telaAtual.length > 0) {
-        telasDistribuidas.push(telaAtual);
-      } else {
-        break;
-      }
+        
+        // Se não conseguiu adicionar peças na vertical, tenta na horizontal
+        if (telaAtual.length === 0) {
+            for (let i = 0; i < pecasParaDistribuir.length; i++) {
+                if (pecasParaDistribuir[i].quantidade > 0) {
+                    const peca = pecasParaDistribuir[i];
+                    
+                    if (peca.largura <= larguraDisponivel) {
+                        telaAtual.push({
+                            ...peca,
+                            posicaoX: 2.45 - larguraDisponivel,
+                            posicaoY: 0
+                        });
+                        
+                        larguraDisponivel -= peca.largura;
+                        
+                        pecasParaDistribuir[i] = {
+                            ...peca,
+                            quantidade: peca.quantidade - 1
+                        };
+                    }
+                }
+            }
+        }
+        
+        // Se conseguiu adicionar alguma peça na tela
+        if (telaAtual.length > 0) {
+            telasDistribuidas.push(telaAtual);
+        } else {
+            break; // Evita loop infinito
+        }
     }
-
-    const areaTotal = pecas.reduce(
-      (acc, peca) => acc + peca.largura * peca.comprimento * peca.quantidade,
-      0
+    
+    const areaTotal = pecas.reduce((acc, peca) => 
+        acc + (peca.largura * peca.comprimento * peca.quantidade), 0
     );
     const areaTela = 2.45 * 6;
     const telasNecessarias = telasDistribuidas.length;
     const aproveitamento = (areaTotal / (telasNecessarias * areaTela)) * 100;
 
     setResultados({
-      telasNecessarias,
-      areaTotal,
-      aproveitamento,
+        telasNecessarias,
+        areaTotal,
+        aproveitamento
     });
-
+    
     setDistribuicaoPecas(telasDistribuidas);
-  };
+};
 
   useEffect(() => {
     calcularResultados();
@@ -342,6 +377,7 @@ function TelasVisualization({ pecas, distribuicao }: TelasVisualizationProps) {
                       backgroundColor: `hsl(${pecaIndex * 137.5 % 360}, 50%, 50%)`,
                       opacity: 0.7,
                       left: `${(peca.posicaoX || 0) / 2.45 * 100}%`,
+                      top: `${(peca.posicaoY || 0) / 6 * 100}%`,
                       top: '0%'
                     }}
                   >
