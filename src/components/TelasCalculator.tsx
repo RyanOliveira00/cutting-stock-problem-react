@@ -74,43 +74,34 @@ export function TelasCalculator() {
 
   const calcularResultados = () => {
     const telasDistribuidas = [];
-    const pecasParaDistribuir = [...pecas];
+    const pecasParaDistribuir = pecas.map(peca => ({...peca}));
     
-    while (pecasParaDistribuir.length > 0) {
+    while (pecasParaDistribuir.some(p => p.quantidade > 0)) {
         const telaAtual = [];
         let larguraDisponivel = 2.45;
         
-        // Tenta encaixar peças lado a lado na tela atual
-        for (let i = pecasParaDistribuir.length - 1; i >= 0; i--) {
+        for (let i = 0; i < pecasParaDistribuir.length; i++) {
             const peca = pecasParaDistribuir[i];
             
-            if (peca.largura <= larguraDisponivel && peca.quantidade > 0) {
-                // Adiciona a peça à tela atual
+            if (peca.quantidade > 0 && peca.largura <= larguraDisponivel) {
                 telaAtual.push({
                     ...peca,
-                    quantidade: 1,
                     posicaoX: 2.45 - larguraDisponivel
                 });
                 
-                // Atualiza a largura disponível
                 larguraDisponivel -= peca.largura;
                 
-                // Atualiza a quantidade restante da peça
-                peca.quantidade--;
-                
-                // Remove a peça se não houver mais unidades
-                if (peca.quantidade === 0) {
-                    pecasParaDistribuir.splice(i, 1);
-                }
+                pecasParaDistribuir[i] = {
+                    ...peca,
+                    quantidade: peca.quantidade - 1
+                };
             }
         }
         
-        // Se conseguiu adicionar alguma peça na tela
         if (telaAtual.length > 0) {
             telasDistribuidas.push(telaAtual);
         } else {
-            // Se não conseguiu adicionar nenhuma peça, provavelmente há um problema
-            break;
+            break; 
         }
     }
     
