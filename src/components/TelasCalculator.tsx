@@ -22,6 +22,11 @@ interface Resultados {
   aproveitamento: number;
 }
 
+interface PecaPosicionada extends Peca {
+  posicaoX: number;
+  posicaoY: number;
+}
+
 export function TelasCalculator() {
   const [pecas, setPecas] = useState<Peca[]>([]);
   const [formData, setFormData] = useState<FormData>({
@@ -74,73 +79,80 @@ export function TelasCalculator() {
   };
 
   const calcularResultados = () => {
-    const telasDistribuidas = [];
-    // Faz uma cópia profunda das peças
-    let pecasParaDistribuir = pecas.map(peca => ({...peca}));
-    
+    const telasDistribuidas: PecaPosicionada[][] = [];
+    const pecasParaDistribuir: Peca[] = pecas.map(peca => ({...peca}));
+
     while (pecasParaDistribuir.some(p => p.quantidade > 0)) {
-        const telaAtual = [];
-        let larguraDisponivel = 2.45;
-        let alturaDisponivel = 6.0;
-        
-        // Primeiro tenta encontrar peças que podem ser empilhadas (mesma largura)
-        for (let i = 0; i < pecasParaDistribuir.length; i++) {
-            if (pecasParaDistribuir[i].quantidade > 0) {
-                const peca = pecasParaDistribuir[i];
-                
-                // Se a peça cabe na altura disponível
-                if (peca.comprimento <= alturaDisponivel) {
-                    // Adiciona a peça à tela atual
-                    telaAtual.push({
-                        ...peca,
-                        posicaoX: 0,
-                        posicaoY: 6 - alturaDisponivel // Posição vertical
-                    });
-                    
-                    // Atualiza a altura disponível
-                    alturaDisponivel -= peca.comprimento;
-                    
-                    // Decrementa a quantidade restante
-                    pecasParaDistribuir[i] = {
-                        ...peca,
-                        quantidade: peca.quantidade - 1
-                    };
-                }
-            }
-        }
-        
-        // Se não conseguiu adicionar peças na vertical, tenta na horizontal
-        if (telaAtual.length === 0) {
-            for (let i = 0; i < pecasParaDistribuir.length; i++) {
-                if (pecasParaDistribuir[i].quantidade > 0) {
-                    const peca = pecasParaDistribuir[i];
-                    
-                    if (peca.largura <= larguraDisponivel) {
-                        telaAtual.push({
-                            ...peca,
-                            posicaoX: 2.45 - larguraDisponivel,
-                            posicaoY: 0
-                        });
-                        
-                        larguraDisponivel -= peca.largura;
-                        
-                        pecasParaDistribuir[i] = {
-                            ...peca,
-                            quantidade: peca.quantidade - 1
-                        };
+        const telaAtual: PecaPosicionada[] = [];
+        const espacoDisponivel = {
+            altura: 6.0,    // Altura total disponível na tela
+            largura: 2.45,  // Largura total disponível na tela
+            posicaoY: 0     // Posição Y atual
+        };
+
+        // Tenta adicionar peças à tela atual
+        let adicionouPeca = true;
+        while (adicionouPeca && espacoDisponivel.altura > 0) {
+            adicionouPeca = false;
+
+            // Ordena peças por altura (maior primeiro) para melhor aproveitamento
+            const pecasOrdenadas = [...pecasParaDistribuir]
+                .filter(p => p.quantidade > 0)
+                .sort((a, b) => b.comprimento - a.comprimento);
+
+            // Tenta adicionar cada peça
+            for (const peca of pecasOrdenadas) {
+                while (peca.quantidade > 0 && espacoDisponivel.altura > 0) {
+                    // Verifica se a peça cabe na altura restante
+                    if (peca.comprimento <= espacoDisponivel.altura) {
+                        // Se for peça que ocupa toda largura
+                        if (peca.largura === 2.45) {
+                            telaAtual.push({
+                                ...peca,
+                                quantidade: 1,
+                                posicaoX: 0,
+                                posicaoY: espacoDisponivel.posicaoY
+                            });
+
+                            espacoDisponivel.altura -= peca.comprimento;
+                            espacoDisponivel.posicaoY += peca.comprimento;
+                            peca.quantidade--;
+                            adicionouPeca = true;
+                        }
+                        // Se for peça menor, tenta encaixar lado a lado
+                        else if (peca.largura <= espacoDisponivel.largura) {
+                            telaAtual.push({
+                                ...peca,
+                                quantidade: 1,
+                                posicaoX: 2.45 - espacoDisponivel.largura,
+                                posicaoY: espacoDisponivel.posicaoY
+                            });
+
+                            espacoDisponivel.largura -= peca.largura;
+                            peca.quantidade--;
+                            adicionouPeca = true;
+
+                            // Se preencheu a largura, avança para próxima linha
+                            if (espacoDisponivel.largura < 0.5) { // Assume mínimo de 0.5m para nova peça
+                                espacoDisponivel.altura -= peca.comprimento;
+                                espacoDisponivel.posicaoY += peca.comprimento;
+                                espacoDisponivel.largura = 2.45;
+                            }
+                        }
+                    } else {
+                        break; // Se não cabe mais, sai do loop
                     }
                 }
             }
         }
-        
-        // Se conseguiu adicionar alguma peça na tela
+
         if (telaAtual.length > 0) {
             telasDistribuidas.push(telaAtual);
         } else {
-            break; // Evita loop infinito
+            break;
         }
     }
-    
+
     const areaTotal = pecas.reduce((acc, peca) => 
         acc + (peca.largura * peca.comprimento * peca.quantidade), 0
     );
@@ -156,6 +168,9 @@ export function TelasCalculator() {
     
     setDistribuicaoPecas(telasDistribuidas);
 };
+
+
+
 
   useEffect(() => {
     calcularResultados();
@@ -329,92 +344,147 @@ export function TelasCalculator() {
 //   quantidade: number;
 // }
 
+
+// function TelasVisualization({ pecas, distribuicao }: {
+//   pecas: Peca[];
+//   distribuicao: PecaPosicionada[][];
+// }) {
+//   return (
+//     <Card className="mt-6">
+//       <CardContent className="p-6">
+//         <div className="space-y-16 mt-7">
+//           {distribuicao.map((tela, telaIndex) => (
+//             <div key={telaIndex} className="relative">
+//               <div className="relative bg-gray-100 rounded-lg border-2 border-gray-300" 
+//                    style={{ width: '100%', height: '240px' }}>
+//                 {/* Título da tela */}
+//                 <div className="absolute -top-8 left-0 font-medium">
+//                   Tela {telaIndex + 1}
+//                 </div>
+
+//                 {/* Medidas verticais */}
+//                 <div className="absolute -left-16 h-full flex flex-col justify-between text-sm text-gray-500">
+//                   <span>6m</span>
+//                   <span>3m</span>
+//                   <span>0m</span>
+//                 </div>
+
+//                 {/* Medidas horizontais */}
+//                 <div className="absolute -bottom-8 w-full flex justify-between text-sm text-gray-500">
+//                   <span>0m</span>
+//                   <span>1.225m</span>
+//                   <span>2.45m</span>
+//                 </div>
+
+//                 {/* Grid de referência */}
+//                 <div className="absolute inset-0 grid grid-cols-2">
+//                   <div className="border-r border-gray-300"></div>
+//                 </div>
+//                 <div className="absolute inset-0 grid grid-rows-2">
+//                   <div className="border-b border-gray-300"></div>
+//                 </div>
+
+//                 {/* Peças */}
+//                 {tela.map((peca, pecaIndex) => (
+//                   <div
+//                     key={`${peca.id}-${pecaIndex}`}
+//                     className="absolute border border-white transition-opacity hover:opacity-80"
+//                     style={{
+//                       width: `${(peca.largura / 2.45) * 100}%`,
+//                       height: `${(peca.comprimento / 6) * 100}%`,
+//                       backgroundColor: `hsl(${pecaIndex * 137.5 % 360}, 50%, 50%)`,
+//                       opacity: 0.7,
+//                       left: `${(peca.posicaoX) * (100 / 2.45)}%`,
+//                       top: `${(peca.posicaoY) * (100 / 6)}%`,
+//                       transform: 'translate(0, 0)', // Remove qualquer transformação que possa causar sobreposição
+//                       zIndex: pecaIndex // Garante que peças posteriores fiquem por cima se necessário
+//                     }}
+//                   >
+//                     <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-sm">
+//                       <span>{peca.largura}m x {peca.comprimento}m</span>
+//                     </div>
+//                   </div>
+//                 ))}
+//               </div>
+
+//               {/* Informações da tela */}
+//               <div className="mt-8 text-sm text-gray-600">
+//                 Peças nesta tela: {tela.map(p => `${p.largura}x${p.comprimento}m`).join(' + ')}
+//               </div>
+//             </div>
+//           ))}
+//         </div>
+
+//         {/* Legenda */}
+//         <div className="mt-8">
+//           <h3 className="font-medium mb-2">Peças Cadastradas:</h3>
+//           <div className="flex flex-wrap gap-4">
+//             {pecas.map((peca, index) => (
+//               <div key={peca.id} className="flex items-center">
+//                 <div 
+//                   className="w-4 h-4 rounded mr-2"
+//                   style={{
+//                     backgroundColor: `hsl(${index * 137.5 % 360}, 50%, 50%)`
+//                   }}
+//                 ></div>
+//                 <span>
+//                   {peca.largura}m x {peca.comprimento}m 
+//                   ({peca.quantidade} {peca.quantidade === 1 ? 'peça' : 'peças'})
+//                 </span>
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+//       </CardContent>
+//     </Card>
+//   );
+// }
+
+import React from 'react';
+import { Stage, Layer, Rect, Text } from 'react-konva';
+
+interface PecaPosicionada {
+  largura: number;
+  comprimento: number;
+  posicaoX: number;
+  posicaoY: number;
+}
+
 interface TelasVisualizationProps {
-  pecas: Peca[];
-  distribuicao: Array<Array<Peca>>;
+  distribuicao: PecaPosicionada[][];
 }
 
-
-function TelasVisualization({ pecas, distribuicao }: TelasVisualizationProps) {
+const TelasVisualization: React.FC<TelasVisualizationProps> = ({ distribuicao }) => {
   return (
-    <Card className="mt-6">
-      <CardContent className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Visualização</h2>
-        <div className="space-y-16">
-          {distribuicao.map((tela, telaIndex) => (
-            <div key={telaIndex} className="relative">
-              <div className="relative bg-gray-100 rounded-lg border-2 border-gray-300" style={{ width: '100%', height: '240px' }}>
-                <div className="absolute -top-8 left-0 font-medium">
-                  Tela {telaIndex + 1}
-                </div>
-
-                <div className="absolute -left-16 h-full flex flex-col justify-between text-sm text-gray-500">
-                  <span>6m</span>
-                  <span>3m</span>
-                  <span>0m</span>
-                </div>
-
-                <div className="absolute -bottom-8 w-full flex justify-between text-sm text-gray-500">
-                  <span>0m</span>
-                  <span>1.225m</span>
-                  <span>2.45m</span>
-                </div>
-
-                <div className="absolute inset-0 grid grid-cols-2">
-                  <div className="border-r border-gray-300"></div>
-                </div>
-                <div className="absolute inset-0 grid grid-rows-2">
-                  <div className="border-b border-gray-300"></div>
-                </div>
-
-                {tela.map((peca, pecaIndex) => (
-                  <div
-                    key={`${peca.id}-${pecaIndex}`}
-                    className="absolute border border-white transition-opacity hover:opacity-80"
-                    style={{
-                      width: `${(peca.largura / 2.45) * 100}%`,
-                      height: `${(peca.comprimento / 6) * 100}%`,
-                      backgroundColor: `hsl(${pecaIndex * 137.5 % 360}, 50%, 50%)`,
-                      opacity: 0.7,
-                      left: `${(peca.posicaoX || 0) / 2.45 * 100}%`,
-                      top: `${(peca.posicaoY || 0) / 6 * 100}%`,
-                      top: '0%'
-                    }}
-                  >
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-sm">
-                      <span>{peca.largura}m x {peca.comprimento}m</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-2 text-sm text-gray-600">
-                Peças nesta tela: {tela.map(p => `${p.largura}x${p.comprimento}m`).join(' + ')}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-8">
-          <h3 className="font-medium mb-2">Peças Cadastradas:</h3>
-          <div className="flex flex-wrap gap-4">
-            {pecas.map((peca, index) => (
-              <div key={peca.id} className="flex items-center">
-                <div 
-                  className="w-4 h-4 rounded mr-2"
-                  style={{
-                    backgroundColor: `hsl(${index * 137.5 % 360}, 50%, 50%)`
-                  }}
-                ></div>
-                <span>
-                  {peca.largura}m x {peca.comprimento}m 
-                  ({peca.quantidade} {peca.quantidade === 1 ? 'peça' : 'peças'})
-                </span>
-              </div>
+    <Stage width={600} height={400}>
+      <Layer>
+        {distribuicao.map((tela, telaIndex) => (
+          <React.Fragment key={telaIndex}>
+            {tela.map((peca, pecaIndex) => (
+              <React.Fragment key={`${pecaIndex}-${telaIndex}`}>
+                <Rect
+                  x={peca.posicaoX * (600 / 2.45)} // Ajuste a escala conforme necessário
+                  y={peca.posicaoY * (400 / 6)} // Ajuste a escala conforme necessário
+                  width={peca.largura * (600 / 2.45)} // Ajuste a escala conforme necessário
+                  height={peca.comprimento * (400 / 6)} // Ajuste a escala conforme necessário
+                  fill={`hsl(${pecaIndex * 137.5 % 360}, 50%, 50%)`}
+                  opacity={0.7}
+                  stroke="white"
+                  strokeWidth={1}
+                />
+                <Text
+                  text={`${peca.largura}m x ${peca.comprimento}m`}
+                  x={peca.posicaoX * (600 / 2.45) + 5} // Ajuste a posição do texto
+                  y={peca.posicaoY * (400 / 6) + 5} // Ajuste a posição do texto
+                  fontSize={12}
+                  fill="white"
+                />
+              </React.Fragment>
             ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </React.Fragment>
+        ))}
+      </Layer>
+    </Stage>
   );
-}
+};
+
